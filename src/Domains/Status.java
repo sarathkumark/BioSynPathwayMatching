@@ -8,8 +8,7 @@ package Domains;
  *
  * @author skondred
  */
-
-public enum Substrate {
-    MAL,
-    MMAL,
+public enum Status {
+    ACTIVE,
+    INACTIVE
 }
