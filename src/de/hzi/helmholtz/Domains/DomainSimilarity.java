@@ -4,12 +4,29 @@
  */
 package de.hzi.helmholtz.Domains;
 
+import java.util.Properties;
+
 /**
  *
  * @author skondred
  */
 public class DomainSimilarity {
 
+    private double subdomainPenalty;
+    private double substrateMismatchPenalty;
+    private Properties penaltyProps;
+    
+    public void readPenalties(){
+        try {
+            penaltyProps.load(this.getClass().getClassLoader().getResourceAsStream("de" + System.getProperty("file.separator") + "hzi"
+                                                                                    + "helmhotlz" + System.getProperty("file.separator") + "Domains"
+                                                                                    + System.getProperty("file.separator") + "domainpenalties.properties"));
+            subdomainPenalty = Double.parseDouble(penaltyProps.getProperty("SUBDOMAINPENALTY"));
+            substrateMismatchPenalty = Double.parseDouble(penaltyProps.getProperty("SUBSTRATEMISMATCHPENALTY"));
+        } catch (Exception e) {
+        }
+    }
+    
     /* Return 0 for equivalence 
      * -SUBDOMAINPENALTY for sub-domain
      * -SUBSTRATEMISMATCHPENALTY for substrate mismatch
@@ -19,7 +36,12 @@ public class DomainSimilarity {
     }
 
     public static double getSubDomainSimilarity(Domain d1, Domain d2) {
-        return 0.0;
+        if (d1.getDomainFunctionString().equalsIgnoreCase(d2.getDomainFunctionString())) {
+            return 0.0;
+        }else{
+            //if(d1.getDomainFunctionSubtype().equalsIgnoreCase(d2.getDomainFunctionSubtype()))
+            return 1;
+        }
     }
 
     /*
