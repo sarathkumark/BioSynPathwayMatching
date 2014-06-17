@@ -5,8 +5,9 @@
 package de.hzi.helmholtz.Compare;
 
 import de.hzi.helmholtz.Domains.Domain;
-import de.hzi.helmholtz.Modules.Module;
+import de.hzi.helmholtz.Genes.Gene;
 import de.hzi.helmholtz.Pathways.Pathway;
+import de.hzi.helmholtz.Readers.TSVDataReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,13 +26,13 @@ public class LongestCommonSubsequence {
         
         
         List<Domain> p1Domains = new ArrayList<Domain>();
-        Iterator<Module> p1ModuleIter = p1.moduleIterator();
+        Iterator<Gene> p1ModuleIter = p1.geneIterator();
         while (p1ModuleIter.hasNext()) {
             p1Domains.addAll(p1ModuleIter.next().getDomains());
         }
         
         List<Domain> p2Domains = new ArrayList<Domain>();
-        Iterator<Module> p2ModuleIter = p2.moduleIterator();
+        Iterator<Gene> p2ModuleIter = p2.geneIterator();
         while (p2ModuleIter.hasNext()) {
             p2Domains.addAll(p2ModuleIter.next().getDomains());
         }
@@ -52,5 +53,16 @@ public class LongestCommonSubsequence {
         System.out.println("length of LCS = " + num[p1Domains.size()][p2Domains.size()]);
         
         return lcs;
+    }
+    
+    public static void main(String[] args) {
+        try {
+            TSVDataReader testReader = new TSVDataReader("./data/small/genes.txt", "./data/small/genes_domains.txt");
+            testReader.read();
+            
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

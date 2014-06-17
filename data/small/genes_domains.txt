@@ -7,7 +7,6 @@ ctg1_orf00016:         KS;active - AT;active - DH;active - KR;active - ACP;activ
 ctg1_orf00019:         KS;active - AT;active - DH;active - KR;active - ACP;active
 ctg1_orf00021:         ACP;active - KS;active - AT;active - AT;active - DH;active - KR;active - ACP;active
 
-
 MxA47-Mxa-1#
 ctg1_orf00008:         ACL;active - ACP;active - C;active - A;active - PCP;active
 ctg1_orf00011:         ACP;active - KS;active - AT;active - AT;active - DH;active - KR;active - ACP;active
@@ -17,7 +16,6 @@ ctg1_orf00015:         KS;active - AT;active - DH;active - KR;active - ACP;activ
 ctg1_orf00016:         KS;active - AT;active - DH;active - ER;active - KR;active - ACP;active
 ctg1_orf00017:         C;active - A;active - PCP;active - TE;active
 
-
 DK1622-Mxa-1#
 ctg1_orf00014:         C;active - A;active - PCP;active - TE;active
 ctg1_orf00015:         KS;active - AT;active - DH;active - ER;active - KR;active - ACP;active
@@ -26,7 +24,6 @@ ctg1_orf00019:         KS;active - AT;active - DH;active - KR;active - ACP;activ
 ctg1_orf00020:         KS;active - AT;active - DH;active - KR;active - ACP;active
 ctg1_orf00022:         ACP;active - KS;active - AT;active - AT;active - DH;active - KR;active - ACP;active
 ctg1_orf00024:         ACL;active - ACP;active - C;active - A;active - PCP;active
-
 
 Ccc1071-Pha-1#
 ctg1_orf00002:         ACL;active

@@ -6,6 +6,7 @@ package de.hzi.helmholtz.Domains;
 
 import java.util.Iterator;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  *
@@ -27,6 +28,7 @@ public class Domain implements DomainInterface {
         this.domainFunctionString = function;
         this.domainString = function;
         this.domainStatus = status;
+        this.domainSubstrates = new TreeSet<String>();
     }
 
     public Domain(int id, int IDInFile, String function, String subtype, Status status) {
@@ -37,6 +39,7 @@ public class Domain implements DomainInterface {
         this.domainFunctionSubtype = subtype;
         this.domainString = subtype;
         this.domainStatus = status;
+        this.domainSubstrates = new TreeSet<String>();
     }
 
     public Domain(int id, int IDInFile, String function, Status status, Set<String> substrates) {
@@ -45,6 +48,7 @@ public class Domain implements DomainInterface {
         this.domainFunctionString = function;
         this.domainString = function;
         this.domainStatus = status;
+        this.domainSubstrates = new TreeSet<String>();
         if (!substrates.isEmpty()) {
             Iterator<String> it = substrates.iterator();
             while (it.hasNext()) {
@@ -60,6 +64,7 @@ public class Domain implements DomainInterface {
         this.domainFunctionSubtype = subtype;
         this.domainString = subtype;
         this.domainStatus = status;
+        this.domainSubstrates = new TreeSet<String>();
         if (!substrates.isEmpty()) {
             Iterator<String> it = substrates.iterator();
             while (it.hasNext()) {
