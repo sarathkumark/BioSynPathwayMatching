@@ -159,7 +159,7 @@ public class TSVDataReader {
                             }
                         }
                     }
-                    Pathway p = new Pathway(i, pathwayName, pathwayModules);
+                    Pathway p = new Pathway(i+"", pathwayName, pathwayModules);
                     this.pathways.add(p);
                     pathwayName = "";
                     pathwayModules = new ArrayList<Gene>();

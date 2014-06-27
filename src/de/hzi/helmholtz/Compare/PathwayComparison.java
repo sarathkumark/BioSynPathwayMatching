@@ -12,10 +12,14 @@ import de.hzi.helmholtz.Genes.Gene;
 import de.hzi.helmholtz.Genes.GeneSimilarity;
 import de.hzi.helmholtz.Pathways.Pathway;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import javax.swing.JFrame;
 import javax.swing.WindowConstants;
@@ -29,6 +33,7 @@ public class PathwayComparison {
     private static double finalscore = 0;
     static double s_add = 1.0, s_penality = -1.0;
     static double SCORE_MISMATCH_ERROR = 0.2f;
+    static double DISTANCE_MISMATCH_ERROR = 1;
     JFrame frame;
     //Map<Integer, List<String>> Qmap = new HashMap<Integer, List<String>>();
     //Map<Integer, List<String>> Tmap = new HashMap<Integer, List<String>>();
@@ -37,16 +42,18 @@ public class PathwayComparison {
     private Map<Integer, Integer> srcGeneIdToPositionMap;
     private Map<Integer, Integer> tgtGeneIdToPositionMap;
     // Range of window sizes to be considered for combining domains into single genes --> [1,maxWindowSize]
-    private int maxWindowSize;
-    private double functionWeight;
-    private double statusWeight;
-    private double substrateWeight;
+    private int maxWindowSize = 3;
+    private double functionWeight = 2f;
+    private double statusWeight = 0.5f;
+    private double substrateWeight = 0.5f;
     private int GENE_MAX_DISTANCE = 1000;
 
     public PathwayComparison(Pathway source, Pathway target) {
         this.source = source;
         this.target = target;
         constructBiMaps();
+        System.out.println(source.toString());
+        System.out.println(target.toString());
         frame = new JFrame("Matching");
     }
 
@@ -203,63 +210,34 @@ public class PathwayComparison {
                 currentTargetGene++;
 
                 GeneSimilarity geneSimilarity = new GeneSimilarity();
-                if (queryGene.size() == targetGene.size()) {
+                if ((queryGene.size() <= targetGene.size())) {
                     // Match one source gene against one target gene with the same index
                     List<Gene> targetGenes = new ArrayList<Gene>();
                     targetGenes.add(targetGene);
                     double score = geneSimilarity.levenshteinSimilarity(queryGene, targetGenes, functionWeight, statusWeight, substrateWeight);
                     forwardScores.put(score, currentTargetGene + "");
-                } else if (queryGene.size() < targetGene.size()) {
-                    // Merge multiple source genes and compare to one target gene
-                    // store scores for windows of all sizes upto maxWindowSize
-                    for (int currentWindowSize = 1; currentWindowSize < maxWindowSize; currentWindowSize++) {  
-                        if (currentQueryGene + 1 < firstPathway.size()) {
-                            // construct list of source genes to compare, list size = currentWindowSize
-                            List<Gene> mergedGenes = new ArrayList<Gene>();
-                            List<Gene> sourceGenesList = firstPathway.getGenes();
-                            for (int i = currentQueryGene; i <= currentWindowSize; i++) {
-                                mergedGenes.add(sourceGenesList.get(i));
-                            }
-                            double score = geneSimilarity.levenshteinSimilarity(targetGene, mergedGenes, functionWeight, statusWeight, substrateWeight);
-                            if (score < 0) {
-                                String combinedGenes = "";
-                                for (int i = currentQueryGene; i < currentQueryGene + currentWindowSize; i++) {
-                                    combinedGenes += i + "+";
-                                }
-                                combinedGenes = combinedGenes.substring(0, combinedGenes.length() - 1);
-                                forwardScores.put(Math.abs(score), combinedGenes);
-                            } else {
-                                String combinedGenes = "";
-                                for (int i = currentQueryGene + currentWindowSize - 1; i > currentQueryGene; i--) {
-                                    combinedGenes += i + "+";
-                                }
-                                combinedGenes = combinedGenes.substring(0, combinedGenes.length() - 1);
-                                forwardScores.put(Math.abs(score), combinedGenes);
-                            }
-                        }
-                    }
-                } else {
+                } else if (queryGene.size() > targetGene.size()) {
                     // Merge multiple target genes and compare to one source gene
                     // store scores for windows of all sizes upto maxWindowSize
-                    for (int currentWindowSize = 1; currentWindowSize < maxWindowSize; currentWindowSize++) {
-                        if (currentTargetGene + 1 < secondPathway.size()) {
+                    for (int currentWindowSize = 0; currentWindowSize < maxWindowSize; currentWindowSize++) {
+                        if (currentTargetGene + currentWindowSize <= secondPathway.size()) {
                             // construct list of target genes to compare, list size = currentWindowSize
                             List<Gene> mergedGenes = new ArrayList<Gene>();
                             List<Gene> targetGenesList = secondPathway.getGenes();
-                            for (int i = currentTargetGene; i <= currentWindowSize; i++) {
+                            for (int i = currentTargetGene - 1; i <= currentWindowSize; i++) {
                                 mergedGenes.add(targetGenesList.get(i));
                             }
                             double score = geneSimilarity.levenshteinSimilarity(queryGene, mergedGenes, functionWeight, statusWeight, substrateWeight);
-                            if (score < 0) {
+                            if (score > 0) {
                                 String combinedGenes = "";
-                                for (int i = currentTargetGene; i < currentTargetGene + currentWindowSize; i++) {
+                                for (int i = currentTargetGene; i <= currentTargetGene + currentWindowSize; i++) {
                                     combinedGenes += i + "+";
                                 }
                                 combinedGenes = combinedGenes.substring(0, combinedGenes.length() - 1);
                                 forwardScores.put(Math.abs(score), combinedGenes);
                             } else {
                                 String combinedGenes = "";
-                                for (int i = currentTargetGene + currentWindowSize - 1; i > currentTargetGene; i--) {
+                                for (int i = currentTargetGene + currentWindowSize; i >= currentTargetGene; i--) {
                                     combinedGenes += i + "+";
                                 }
                                 combinedGenes = combinedGenes.substring(0, combinedGenes.length() - 1);
@@ -336,6 +314,85 @@ public class PathwayComparison {
         collections.asMap().remove(key);
     }
 
+    public void pathwayComparisonGlobalBest() {
+        Multimap<Integer, Multimap<Double, String>> forward = pcompare(source, target); // key: qgeneId, value: {score=tgenecombination;...}
+        Multimap<Integer, Multimap<Double, String>> reverse = pcompare(target, source);
+
+        /* Create global list of matchings ordered by score by joining forward and reverse lists
+         * key: querygene -> targetgenes
+         * value: score
+         */
+        TreeMultimap<Double, String> globalMap = TreeMultimap.create(Ordering.natural().reverse(), Ordering.natural());
+        for (Map.Entry<Integer, Multimap<Double, String>> e : forward.entries()) {
+            int fgene = e.getKey();
+            Multimap<Double, String> geneAndScore = e.getValue();
+            for (Map.Entry<Double, String> scoreEntry : geneAndScore.entries()) {
+                double score = scoreEntry.getKey();
+                String matchingGeneString = scoreEntry.getValue();
+                String[] multipleMatchingGenes = matchingGeneString.split(",");
+                for (String matchingGene : multipleMatchingGenes) {
+                    String newKey = fgene + "->" + matchingGene;
+                    globalMap.put(score, newKey);
+                }
+            }
+        }
+        for (Map.Entry<Integer, Multimap<Double, String>> e : reverse.entries()) {
+            int rgene = e.getKey();
+            Multimap<Double, String> geneAndScore = e.getValue();
+            for (Map.Entry<Double, String> scoreEntry : geneAndScore.entries()) {
+                double score = scoreEntry.getKey();
+                String matchingGeneString = scoreEntry.getValue();
+                String[] multipleMatchingGenes = matchingGeneString.split(",");
+                for (String matchingGene : multipleMatchingGenes) {
+                    String newKey = matchingGene + "->" + rgene;
+                    globalMap.put(score, newKey);
+                }
+            }
+        }
+
+        // create alignment
+        System.out.println(globalMap);
+
+        Map<String, Map<String, Double>> bestResultMapping = new TreeMap<String, Map<String, Double>>();
+        Map<String, Double> matchingInTarget;
+        Set<String> queryGenesCovered = new HashSet<String>();
+        Set<String> targetGenesCovered = new HashSet<String>();
+
+        for (Map.Entry<Double, String> entry : globalMap.entries()) {
+            double score = entry.getKey();
+            //score=[alignment1, aligment2, ..]
+            String alignment = entry.getValue();
+
+            String bestScoreAlignment = alignment.split(",")[0];
+            // start->end
+            String start = bestScoreAlignment.split("->")[0];
+            String end = bestScoreAlignment.split("->")[1];
+
+            // start and end can be combination of genes
+            Set<String> s = new HashSet<String>(Arrays.asList((start + "+").split("\\+")));
+            Set<String> t = new HashSet<String>(Arrays.asList((end + "+").split("\\+")));
+
+            // add to result mapping
+            Set<String> sIntersection = new HashSet<String>();
+            sIntersection.addAll(queryGenesCovered);
+            sIntersection.retainAll(s);
+
+            Set<String> tIntersection = new HashSet<String>();
+            tIntersection.addAll(targetGenesCovered);
+            tIntersection.retainAll(t);
+
+            if (sIntersection.isEmpty() && tIntersection.isEmpty()) {
+                matchingInTarget = new HashMap<String, Double>();
+                matchingInTarget.put(end, score);
+                bestResultMapping.put(start, matchingInTarget);
+                queryGenesCovered.addAll(s);
+                targetGenesCovered.addAll(t);
+            }
+        }
+
+        System.out.println(bestResultMapping);
+    }
+
     public void pathwayComparison() {
         Multimap<Integer, Multimap<Double, String>> forward = pcompare(source, target);
         Multimap<Integer, Multimap<Double, String>> copyOfForward = ArrayListMultimap.create(forward); // make changes to this copy while combining genes
@@ -372,75 +429,32 @@ public class PathwayComparison {
                                 candidateTargetGene = candidateTargetGene + "+";    // add a + symbol in the end to every gene and gene combination in the target
 
                                 String[] genesInTargetCombination = candidateTargetGene.split("\\+");
-                                for (String geneInTargetCombination : genesInTargetCombination) {
 
-                                    String[] query_scores = getmax(reverse.get(Integer.parseInt(geneInTargetCombination.trim())), forward).split("=");
-                                    if (query_scores.length >= 1) {
-                                        double currentQueryGeneScore = Double.parseDouble(query_scores[0].toString().trim());
-                                        String currentQueryGeneCombination = query_scores[1].trim();
+                                String firstGeneInTargetCombination = genesInTargetCombination[0];
+                                if (Integer.parseInt(firstGeneInTargetCombination) == currentIndex) {
+                                    //  if both are pointing to each other then assign
+                                    overallScore = currentTargetGeneScore;
+                                    whichGeneInTarget = candidateTargetGene;
+                                    currentTargetGeneAssigned = true;
+                                } /*else {
+                                 double bestInTheTargetCombination = Double.MIN_VALUE;
+                                 for (String geneInTargetCombination : genesInTargetCombination) {
+                                 String[] query_scores = getmax(reverse.get(Integer.parseInt(geneInTargetCombination.trim())), forward).split("=");
+                                 if (Double.parseDouble(query_scores[0]) > bestInTheTargetCombination) {
+                                 bestInTheTargetCombination = Double.parseDouble(query_scores[0]);
+                                 }
+                                 }
+                                 if (bestInTheTargetCombination - currentTargetGeneScore <= SCORE_MISMATCH_ERROR) {
+                                 // assign
+                                 overallScore = currentTargetGeneScore;
+                                 whichGeneInTarget = candidateTargetGene;
+                                 currentTargetGeneAssigned = true;
+                                 }
+                                 }*/
 
-                                        if (currentTargetGeneScore - currentQueryGeneScore <= SCORE_MISMATCH_ERROR) {   // query-to-target edge has higher score than target-to-query edge (e.g., q(1)->t(2+3) > t(2)->q(4))
-                                            //  assign
-                                            overallScore = currentTargetGeneScore;
-                                            whichGeneInTarget = candidateTargetGene;
-                                            currentTargetGeneAssigned = true;
-                                        } else {    // currentQueryGeneScore <= currentTargetGeneScore
-                                            // if both are pointing to each other with different scores, then assign
-                                            // else do pos(tgene)-pos(qgene)
-                                            //      if +ve then assign
-                                            //      if -ve then do not assign
-                                            currentQueryGeneCombination = currentQueryGeneCombination + ";";  // add a ; symbol in the end to every candidate gene combination in query
-                                            String[] currentQueryGenes = currentQueryGeneCombination.split(";");
-                                            for (String currentQueryGene : currentQueryGenes) {
-                                                currentQueryGene = currentQueryGene + "+";
-
-                                                String[] genesInQueryCombination = currentQueryGene.split("\\+");
-                                                String bestQueryGene = genesInQueryCombination[0];
-                                                double scoreOfBestQueryGene = 0.0f;
-                                                for (String queryGene : genesInQueryCombination) {
-                                                    String[] new_target_scores = getmax(copyOfForward.get(Integer.parseInt(queryGene.trim())), reverse).split("=");
-
-                                                    if (new_target_scores.length >= 1) {
-                                                        double newTargetGeneScore = Double.parseDouble(new_target_scores[0].toString().trim());
-                                                        String newTargetGeneCombination = new_target_scores[1].trim();
-                                                        newTargetGeneCombination = newTargetGeneCombination + ";";
-                                                        String[] newTargetGenes = newTargetGeneCombination.split(";");
-
-                                                        for (String newTargetGene : newTargetGenes) {
-                                                            newTargetGene = newTargetGene + "+";
-                                                            String[] genesInNewTargetCombination = newTargetGene.split("\\+");
-                                                            for (String geneInNewTargetCombination : genesInNewTargetCombination) {
-
-                                                                if (currentQueryGeneScore >= newTargetGeneScore) {
-                                                                    overallScore = currentQueryGeneScore;
-                                                                    whichGeneInTarget = currentQueryGene;
-                                                                } else {
-                                                                    overallScore = newTargetGeneScore;
-                                                                    whichGeneInTarget = newTargetGene;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                if (Integer.parseInt(bestQueryGene.trim()) == currentIndex) {
-
-                                                    // collect scores of query to target and retrieve which target combination has max value (e.g., 1=2,3+4)
-
-
-                                                    // Assign to nearest gene if they have same scores (for e.g., if 1=2;3+4, assign 1=2)
-                                                    if (Double.parseDouble(query_scores[0].trim()) <= Double.parseDouble(target_scores[0].trim())) {
-                                                        overallScore = Double.parseDouble(target_scores[0].trim());
-                                                        int distance = Math.abs(Integer.parseInt(bestQueryGene.trim()) - currentIndex);
-                                                        if (distance < nearestGene) {
-                                                            nearestGene = distance;
-                                                            whichGeneInTarget = candidateTargetGene;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                            }
+                            if (currentTargetGeneAssigned == false) {
+                                // no target gene wants to point to the query gene
                             }
                         }
                     }
@@ -471,3 +485,89 @@ public class PathwayComparison {
         finalscore = aFinalscore;
     }
 }
+
+/*
+ currentQueryGeneCombination = currentQueryGeneCombination + ";";  // add a ; symbol in the end to every candidate gene combination in query
+ String[] currentQueryGenes = currentQueryGeneCombination.split(";");
+ for (String currentQueryGene : currentQueryGenes) {
+ currentQueryGene = currentQueryGene + "+";
+
+ String[] genesInQueryCombination = currentQueryGene.split("\\+");
+ String bestQueryGene = genesInQueryCombination[0];
+ double scoreOfBestQueryGene = 0.0f;
+ for (String queryGene : genesInQueryCombination) {
+ String[] new_target_scores = getmax(copyOfForward.get(Integer.parseInt(queryGene.trim())), reverse).split("=");
+
+ if (new_target_scores.length >= 1) {
+ double newTargetGeneScore = Double.parseDouble(new_target_scores[0].toString().trim());
+ String newTargetGeneCombination = new_target_scores[1].trim();
+ newTargetGeneCombination = newTargetGeneCombination + ";";
+ String[] newTargetGenes = newTargetGeneCombination.split(";");
+
+ for (String newTargetGene : newTargetGenes) {
+ newTargetGene = newTargetGene + "+";
+ String[] genesInNewTargetCombination = newTargetGene.split("\\+");
+ for (String geneInNewTargetCombination : genesInNewTargetCombination) {
+
+ if (currentQueryGeneScore >= newTargetGeneScore) {
+ overallScore = currentQueryGeneScore;
+ whichGeneInTarget = currentQueryGene;
+ } else {
+ overallScore = newTargetGeneScore;
+ whichGeneInTarget = newTargetGene;
+ }
+ }
+ }
+ }
+ }
+ if (Integer.parseInt(bestQueryGene.trim()) == currentIndex) {
+
+ // collect scores of query to target and retrieve which target combination has max value (e.g., 1=2,3+4)
+
+
+ // Assign to nearest gene if they have same scores (for e.g., if 1=2;3+4, assign 1=2)
+ if (Double.parseDouble(query_scores[0].trim()) <= Double.parseDouble(target_scores[0].trim())) {
+ overallScore = Double.parseDouble(target_scores[0].trim());
+ int distance = Math.abs(Integer.parseInt(bestQueryGene.trim()) - currentIndex);
+ if (distance < nearestGene) {
+ nearestGene = distance;
+ whichGeneInTarget = candidateTargetGene;
+ }
+ }
+ }
+ }
+ * 
+ * 
+ * 
+ if (query_scores.length >= 1) {
+ double currentQueryGeneScore = Double.parseDouble(query_scores[0].toString().trim());
+ String currentQueryGeneCombination = query_scores[1].trim();
+
+ if (currentTargetGeneScore - currentQueryGeneScore <= SCORE_MISMATCH_ERROR) {   // query-to-target edge has higher score than target-to-query edge (e.g., q(1)->t(2+3) > t(2)->q(4))
+ //  assign
+ overallScore = currentTargetGeneScore;
+ whichGeneInTarget = candidateTargetGene;
+ currentTargetGeneAssigned = true;
+ } else {    // currentQueryGeneScore <= currentTargetGeneScore
+ // if both are pointing to each other with different scores, then assign
+ // else do position(tgene)-position(qgene)
+ //      if +ve then assign
+ //      if -ve then do not assign
+ currentQueryGeneCombination = currentQueryGeneCombination + ";";  // add a ; symbol in the end to every candidate gene combination in query
+ String[] currentQueryGenes = currentQueryGeneCombination.split(";");
+ for (String currentQueryGene : currentQueryGenes) {
+ currentQueryGene = currentQueryGene + "+";
+ String[] genesInQueryCombination = currentQueryGene.split("\\+");
+ String bestQueryGene = genesInQueryCombination[0];
+ if (Integer.parseInt(bestQueryGene) == currentIndex) {
+ // both are pointing to each other, so assign
+ overallScore = currentTargetGeneScore;
+ whichGeneInTarget = candidateTargetGene;
+ currentTargetGeneAssigned = true;
+ } else {
+ // not pointing to each other, so check distance                                                    
+ }
+ }
+ }
+ }
+ */

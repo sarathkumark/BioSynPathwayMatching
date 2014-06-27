@@ -83,4 +83,15 @@ public class Gene {
     public int size() {
         return size;
     }
+
+    @Override
+    public String toString() {
+        String toReturn = "";
+
+        toReturn += geneId;
+        toReturn += ":";
+        toReturn += domains.toString();
+
+        return toReturn;
+    }
 }

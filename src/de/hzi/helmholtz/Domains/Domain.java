@@ -168,4 +168,9 @@ public class Domain implements DomainInterface {
     public void setSubstrates(Set<String> substrates) {
         this.domainSubstrates = substrates;
     }
+    
+    @Override
+    public String toString(){
+        return this.domainFunctionString+"_"+this.domainStatus+"_"+this.domainSubstrates.toString();
+    }
 }

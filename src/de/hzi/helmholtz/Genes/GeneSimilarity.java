@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
 /**
  *
@@ -69,7 +68,7 @@ public class GeneSimilarity {
         }
         reverseFunctionScore = 1 - ((double) LevenshteinDistance.computeLevenshteinDistance(qfunction, rtfunction) / (Math.max(qfunction.size(), rtfunction.size())));
 
-        if (straightFunctionScore > reverseFunctionScore) {
+        if (straightFunctionScore >= reverseFunctionScore) {
             direction = 1;
             functionscore = straightFunctionScore;
             statusScore = getStatusComparisonScore(qactivity, tactivity);
@@ -83,7 +82,7 @@ public class GeneSimilarity {
         if (functionMatchWeight == 0 || statusMatchWeight == 0 || substrateMatchWeight == 0) {
             finalscore = direction * Math.round((((2 * functionscore) + (0.5 * statusScore) + (0.5 * substrateScore)) / 3) * 100.0) / 100.0;
         } else {
-            finalscore = direction * Math.round((((functionMatchWeight * functionscore) + (statusMatchWeight * statusScore) + (substrateMatchWeight * substrateScore)) / 3) * 100.0);
+            finalscore = direction * Math.round((((functionMatchWeight * functionscore) + (statusMatchWeight * statusScore) + (substrateMatchWeight * substrateScore)) / 3) * 100.0) / 100.0;
         }
         return finalscore;
     }
@@ -91,12 +90,15 @@ public class GeneSimilarity {
     /* Compare statuses of query gene with list of target genes .. currently positive only .. doesnt penalize mismatches*/
     private double getStatusComparisonScore(List<String> queryStatusesList, List<String> targetStatusesList) {
         double score = 0.0f;
-        for (int i = 0; i < queryStatusesList.size(); i++) {
-            String q = queryStatusesList.get(i);
-            String t = targetStatusesList.get(i);
-            if (q.equalsIgnoreCase(t)) {
-                score++;
-            }
+        if (queryStatusesList.size() == targetStatusesList.size()) {
+            /*for (int i = 0; i < queryStatusesList.size(); i++) {
+             String q = queryStatusesList.get(i);
+             String t = targetStatusesList.get(i);
+             if (q.equalsIgnoreCase(t)) {
+             score++;
+             }
+             }*/
+            score = 1 - ((double) LevenshteinDistance.computeLevenshteinDistance(queryStatusesList, targetStatusesList) / (Math.max(queryStatusesList.size(), targetStatusesList.size())));
         }
         return score;
     }
@@ -104,11 +106,28 @@ public class GeneSimilarity {
     /* Compare substrates of query gene with list of target genes*/
     private double getSubstrateComparisonScore(List<Set<String>> querySubstrateList, List<Set<String>> targetSubstrateList) {
         double score = 0.0f;
-        for (int i = 0; i < querySubstrateList.size(); i++) {
-            Set<String> q = querySubstrateList.get(i);
-            Set<String> t = targetSubstrateList.get(i);
-            q.retainAll(t);
-            score += q.size();
+        if (querySubstrateList.size() == targetSubstrateList.size()) {
+            /*for (int i = 0; i < querySubstrateList.size(); i++) {
+             Set<String> q = querySubstrateList.get(i);
+             Set<String> t = targetSubstrateList.get(i);
+             q.retainAll(t);
+             score += q.size();
+             }*/
+            List<String> querySubstratesStrings = new ArrayList<String>();
+            String querySubstratesString = "";
+            for (int i = 0; i < querySubstrateList.size(); i++) {
+                querySubstratesString += querySubstrateList.get(i).toString();
+            }
+            querySubstratesStrings.add(querySubstratesString);
+
+            List<String> targetSubstratesStrings = new ArrayList<String>();
+            String targetSubstratesString = "";
+            for (int i = 0; i < targetSubstrateList.size(); i++) {
+                targetSubstratesString += targetSubstrateList.get(i).toString();
+            }
+            targetSubstratesStrings.add(targetSubstratesString);
+
+            score = 1 - ((double) LevenshteinDistance.computeLevenshteinDistance(querySubstratesStrings, targetSubstratesStrings) / (Math.max(querySubstratesStrings.size(), targetSubstratesStrings.size())));
         }
         return score;
     }

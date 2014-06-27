@@ -4,6 +4,7 @@
  */
 package de.hzi.helmholtz.Pathways;
 
+import de.hzi.helmholtz.Domains.Domain;
 import de.hzi.helmholtz.Genes.Gene;
 import java.util.Iterator;
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.List;
 public class Pathway {
 
     /*Pathway ID*/
-    private int pathwayId;
+    private String pathwayId;
     /*Pathway name*/
     private String pathwayName;
     /*Ordered list of genes*/
@@ -26,7 +27,7 @@ public class Pathway {
     public Pathway() {
     }
 
-    public Pathway(int pathwayId,String pathwayName, List<Gene> m) {
+    public Pathway(String pathwayId, String pathwayName, List<Gene> m) {
         this.pathwayId = pathwayId;
         this.pathwayName = pathwayName;
         this.genes = m;
@@ -68,14 +69,14 @@ public class Pathway {
     /**
      * @return the pathwayId
      */
-    public int getPathwayId() {
+    public String getPathwayId() {
         return pathwayId;
     }
 
     /**
      * @param pathwayId the pathwayId to set
      */
-    public void setPathwayId(int pathwayId) {
+    public void setPathwayId(String pathwayId) {
         this.pathwayId = pathwayId;
     }
 
@@ -84,5 +85,21 @@ public class Pathway {
      */
     public int size() {
         return size;
+    }
+
+    @Override
+    public String toString() {
+        String toReturn = this.pathwayId+"\n";
+        for (Gene g : this.genes) {
+            int geneId = g.getGeneId();
+            toReturn += geneId + ": [";
+            List<Domain> values = g.getDomains();
+            for (Domain d : values) {
+                toReturn += d.toString() + ",";
+            }
+            toReturn = toReturn.substring(0,toReturn.length()-1);
+            toReturn += "]\n";
+        }
+        return toReturn;
     }
 }

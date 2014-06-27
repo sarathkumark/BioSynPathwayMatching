@@ -101,7 +101,17 @@ public class SimpleCompare {
     public void getAllPathways() throws Exception {
         DBPathway dbP;
         Map<Integer, List<String>> pathway = new TreeMap<Integer, List<String>>();
-        String selectStatement = "select concat(BSYN_ID,'_',B_model) as pathway ,B_gene, gene from (select BSYN_ID,B_model,B_gene,GROUP_CONCAT(concat(IF(B_domian = '','?',B_domian),'_',B_active,'_', IF( ExtractValue(B_buildingblock_xml, '/buildingblock/moiety/parent/name') = '', 'nil', ExtractValue(B_buildingblock_xml, '/buildingblock/moiety/parent/name') ))) as gene from B_BiosyntheticPathways group by BSYN_ID,B_model, B_gene order by B_key) T order by BSYN_ID, B_model, B_gene;";
+        String groupconcatStatement = "SET @@group_concat_max_len=9182";
+        PreparedStatement groupconcatPreparedStatement = connection.prepareStatement(groupconcatStatement);
+        try {
+            if (connection == null || connection.isClosed()) {
+                setupConnection();
+            }
+            groupconcatPreparedStatement.execute();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        String selectStatement = "select concat(BSYN_ID,'_',B_model) as pathway ,B_gene, gene from (select BSYN_ID,B_model,B_gene,GROUP_CONCAT(concat(IF(B_domian = '','?',B_domian),'_',B_active,'_', IF( ExtractValue(B_buildingblock_xml, '/buildingblock/moiety/parent/name') = '', 'nil', ExtractValue(B_buildingblock_xml, '/buildingblock/moiety/parent/name') ))) as gene from B_BiosyntheticPathways group by BSYN_ID,B_model, B_gene order by B_key) T order by BSYN_ID, B_model, B_gene";
         PreparedStatement preparedStatement = connection.prepareStatement(selectStatement);
         try {
             if (connection == null || connection.isClosed()) {
@@ -142,26 +152,63 @@ public class SimpleCompare {
             }
         }
     }
-    
-    public void comparePathways(){
+
+    public void comparePathways() {
         SimpleLevensteinCompare vTest;
-        
+
         Iterator<DBPathway> firstIter = allPathways.iterator();
         Iterator<DBPathway> secondIter = allPathways.iterator();
-        
-        while(firstIter.hasNext()){
+
+        while (firstIter.hasNext()) {
+            DBPathway source = firstIter.next();
+            //secondIter.next();
+            System.out.println("**************************************************");
+            secondIter = allPathways.iterator();
+            while (secondIter.hasNext()) {
+                DBPathway target = secondIter.next();
+                System.out.println(source.getPathwayID() + " && " + target.getPathwayID());
+                if (!source.getPathwayID().equalsIgnoreCase(target.getPathwayID())) {
+                    Map<Integer, Integer> srcGeneIdToPositionMap = new TreeMap<Integer, Integer>();
+                    int temp = 0;
+                    for (Map.Entry<Integer, List<String>> e : source.getPathway().entrySet()) {
+                        srcGeneIdToPositionMap.put(e.getKey(), temp++);
+                    }
+                    Map<Integer, Integer> tgtGeneIdToPositionMap = new TreeMap<Integer, Integer>();
+                    temp = 0;
+                    for (Map.Entry<Integer, List<String>> e : target.getPathway().entrySet()) {
+                        tgtGeneIdToPositionMap.put(e.getKey(), temp++);
+                    }
+                    //source.printPathway();
+                    //target.printPathway();
+                    PathwayComparison pComparison = new PathwayComparison(source.convertToPathwayObj(), target.convertToPathwayObj());
+                    //PathwayComparison pComparison = new PathwayComparison(target.convertToPathwayObj(), source.convertToPathwayObj());
+                    pComparison.pathwayComparisonGlobalBest();;
+                    //break;
+                }
+            }
+            System.out.println("**************************************************");
+        }
+    }
+
+    public void comparePathwaysOld() {
+        SimpleLevensteinCompare vTest;
+
+        Iterator<DBPathway> firstIter = allPathways.iterator();
+        Iterator<DBPathway> secondIter = allPathways.iterator();
+
+        while (firstIter.hasNext()) {
             DBPathway source = firstIter.next();
             secondIter.next();
-            while(secondIter.hasNext()){
+            while (secondIter.hasNext()) {
                 DBPathway target = firstIter.next();
                 Map<Integer, Integer> srcGeneIdToPositionMap = new TreeMap<Integer, Integer>();
                 int temp = 0;
-                for(Map.Entry<Integer, List<String>> e: source.getPathway().entrySet()){
+                for (Map.Entry<Integer, List<String>> e : source.getPathway().entrySet()) {
                     srcGeneIdToPositionMap.put(e.getKey(), temp++);
                 }
                 Map<Integer, Integer> tgtGeneIdToPositionMap = new TreeMap<Integer, Integer>();
                 temp = 0;
-                for(Map.Entry<Integer, List<String>> e: target.getPathway().entrySet()){
+                for (Map.Entry<Integer, List<String>> e : target.getPathway().entrySet()) {
                     tgtGeneIdToPositionMap.put(e.getKey(), temp++);
                 }
                 source.printPathway();
