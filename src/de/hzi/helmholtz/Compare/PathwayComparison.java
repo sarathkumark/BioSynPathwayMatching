@@ -5,6 +5,8 @@
 package de.hzi.helmholtz.Compare;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
@@ -39,14 +41,16 @@ public class PathwayComparison {
     //Map<Integer, List<String>> Tmap = new HashMap<Integer, List<String>>();
     private Pathway source;
     private Pathway target;
-    private Map<Integer, Integer> srcGeneIdToPositionMap;
-    private Map<Integer, Integer> tgtGeneIdToPositionMap;
+    private BiMap<Integer, Integer> srcGeneIdToPositionMap;
+    private BiMap<Integer, Integer> tgtGeneIdToPositionMap;
     // Range of window sizes to be considered for combining domains into single genes --> [1,maxWindowSize]
     private int maxWindowSize = 3;
     private double functionWeight = 2f;
     private double statusWeight = 0.5f;
     private double substrateWeight = 0.5f;
     private int GENE_MAX_DISTANCE = 1000;
+
+    private Map<String, Map<String, Double>> bestResultMapping;
 
     public PathwayComparison(Pathway source, Pathway target) {
         this.source = source;
@@ -59,13 +63,13 @@ public class PathwayComparison {
 
     /* Construct position to geneId bimaps of both source and target pathways */
     private void constructBiMaps() {
-        srcGeneIdToPositionMap = new TreeMap<Integer, Integer>();
-        int temp = 0;
+        srcGeneIdToPositionMap = HashBiMap.create();
+        int temp = 1;
         for (Gene e : source.getGenes()) {
             srcGeneIdToPositionMap.put(e.getGeneId(), temp++);
         }
-        tgtGeneIdToPositionMap = new TreeMap<Integer, Integer>();
-        temp = 0;
+        tgtGeneIdToPositionMap = HashBiMap.create();
+        temp = 1;
         for (Gene e : target.getGenes()) {
             tgtGeneIdToPositionMap.put(e.getGeneId(), temp++);
         }
@@ -314,7 +318,19 @@ public class PathwayComparison {
         collections.asMap().remove(key);
     }
 
-    public void pathwayComparisonGlobalBest() {
+    /* Utility function to transform 1+2 to geneid(1)+geneid(2) */
+    public String reconstructWithGeneId(String positionIdStr, BiMap<Integer, Integer> newGeneIdToPositionMap) {
+        String geneIdStr = "";
+        String[] positions = positionIdStr.split("\\+");
+        for (String position : positions) {
+            int pos = Integer.parseInt(position);
+            geneIdStr += newGeneIdToPositionMap.inverse().get(pos) + "+";
+        }
+        geneIdStr = geneIdStr.substring(0, geneIdStr.length() - 1);
+        return geneIdStr;
+    }
+
+    public void pathwayComparisonGlobalBestGreedy() {
         Multimap<Integer, Multimap<Double, String>> forward = pcompare(source, target); // key: qgeneId, value: {score=tgenecombination;...}
         Multimap<Integer, Multimap<Double, String>> reverse = pcompare(target, source);
 
@@ -353,7 +369,7 @@ public class PathwayComparison {
         // create alignment
         System.out.println(globalMap);
 
-        Map<String, Map<String, Double>> bestResultMapping = new TreeMap<String, Map<String, Double>>();
+        bestResultMapping = new TreeMap<String, Map<String, Double>>();
         Map<String, Double> matchingInTarget;
         Set<String> queryGenesCovered = new HashSet<String>();
         Set<String> targetGenesCovered = new HashSet<String>();
@@ -383,14 +399,141 @@ public class PathwayComparison {
 
             if (sIntersection.isEmpty() && tIntersection.isEmpty()) {
                 matchingInTarget = new HashMap<String, Double>();
-                matchingInTarget.put(end, score);
-                bestResultMapping.put(start, matchingInTarget);
+                matchingInTarget.put(reconstructWithGeneId(end, tgtGeneIdToPositionMap), score);
+                bestResultMapping.put(reconstructWithGeneId(start, srcGeneIdToPositionMap), matchingInTarget);
                 queryGenesCovered.addAll(s);
                 targetGenesCovered.addAll(t);
             }
         }
 
         System.out.println(bestResultMapping);
+    }
+
+    public void pathwayComparisonGlobalBestCoalesce() {
+        bestResultMapping = new TreeMap<String, Map<String, Double>>();;
+        Map<String, Map<String, Double>> currentBestResultMapping;
+
+        Pathway newSource = new Pathway(source);
+        Pathway newTarget = new Pathway(target);
+        BiMap<Integer, Integer> newSourceGeneIdToPositionMap = srcGeneIdToPositionMap;
+        BiMap<Integer, Integer> newTargetGeneIdToPositionMap = tgtGeneIdToPositionMap;
+
+        while (newSource.size() > 0 && newTarget.size() > 0) {
+
+            // find current best mapping
+            currentBestResultMapping = pathwayComparisonCoalesce(newSource, newTarget, newSourceGeneIdToPositionMap, newTargetGeneIdToPositionMap);
+
+            // remove already mapped genes in source and target
+            for (Map.Entry<String, Map<String, Double>> entry : currentBestResultMapping.entrySet()) {
+                String queryGenesCovered = entry.getKey();
+                String[] qGenesCovered = queryGenesCovered.split("\\+");
+                for (String qGenesCovered1 : qGenesCovered) {
+                    int qGeneCovered = Integer.parseInt(qGenesCovered1);
+                    newSource.removeGene(qGeneCovered);
+                }
+                for (Map.Entry<String, Double> tEntry : entry.getValue().entrySet()) {
+                    String targetGenesCovered = tEntry.getKey();
+                    String[] tGenesCovered = targetGenesCovered.split("\\+");
+                    for (String tGenesCovered1 : tGenesCovered) {
+                        int tGeneCovered = Integer.parseInt(tGenesCovered1);
+                        newTarget.removeGene(tGeneCovered);
+                    }
+                }
+            }
+
+            bestResultMapping.putAll(currentBestResultMapping);
+        }
+        System.out.println(bestResultMapping);
+    }
+
+    public Map<String, Map<String, Double>> pathwayComparisonCoalesce(Pathway newSource, Pathway newTarget, BiMap<Integer, Integer> newSourceGeneIdToPositionMap, BiMap<Integer, Integer> newTargetGeneIdToPositionMap) {
+
+        Multimap<Integer, Multimap<Double, String>> forward = pcompare(newSource, newTarget); // key: qgeneId, value: {score=tgenecombination;...}
+        Multimap<Integer, Multimap<Double, String>> reverse = pcompare(newTarget, newSource);
+
+        // Re-construct the bimaps
+        newSourceGeneIdToPositionMap = HashBiMap.create();
+        int temp = 1;
+        for (Gene e : newSource.getGenes()) {
+            newSourceGeneIdToPositionMap.put(e.getGeneId(), temp++);
+        }
+        newTargetGeneIdToPositionMap = HashBiMap.create();
+        temp = 1;
+        for (Gene e : newTarget.getGenes()) {
+            newTargetGeneIdToPositionMap.put(e.getGeneId(), temp++);
+        }
+
+        /* Create global list of matchings ordered by score by joining forward and reverse lists
+         * key: querygene -> targetgenes
+         * value: score
+         */
+        TreeMultimap<Double, String> globalMap = TreeMultimap.create(Ordering.natural().reverse(), Ordering.natural());
+        for (Map.Entry<Integer, Multimap<Double, String>> e : forward.entries()) {
+            int fgene = e.getKey();
+            Multimap<Double, String> geneAndScore = e.getValue();
+            for (Map.Entry<Double, String> scoreEntry : geneAndScore.entries()) {
+                double score = scoreEntry.getKey();
+                String matchingGeneString = scoreEntry.getValue();
+                String[] multipleMatchingGenes = matchingGeneString.split(",");
+                for (String matchingGene : multipleMatchingGenes) {
+                    String newKey = fgene + "->" + matchingGene;
+                    globalMap.put(score, newKey);
+                }
+            }
+        }
+        for (Map.Entry<Integer, Multimap<Double, String>> e : reverse.entries()) {
+            int rgene = e.getKey();
+            Multimap<Double, String> geneAndScore = e.getValue();
+            for (Map.Entry<Double, String> scoreEntry : geneAndScore.entries()) {
+                double score = scoreEntry.getKey();
+                String matchingGeneString = scoreEntry.getValue();
+                String[] multipleMatchingGenes = matchingGeneString.split(",");
+                for (String matchingGene : multipleMatchingGenes) {
+                    String newKey = matchingGene + "->" + rgene;
+                    globalMap.put(score, newKey);
+                }
+            }
+        }
+
+        // create alignment
+        //System.out.println(globalMap);
+        Map<String, Double> matchingInTarget;
+        Set<String> queryGenesCovered = new HashSet<String>();
+        Set<String> targetGenesCovered = new HashSet<String>();
+        Map<String, Map<String, Double>> currentBestResultMapping = new TreeMap<String, Map<String, Double>>();
+        for (Map.Entry<Double, String> entry : globalMap.entries()) {
+            double score = entry.getKey();
+            //score=[alignment1, aligment2, ..]
+            String alignment = entry.getValue();
+
+            String bestScoreAlignment = alignment.split(",")[0];
+            // start->end
+            String start = bestScoreAlignment.split("->")[0];
+            String end = bestScoreAlignment.split("->")[1];
+
+            // start and end can be combination of genes
+            Set<String> s = new HashSet<String>(Arrays.asList((start + "+").split("\\+")));
+            Set<String> t = new HashSet<String>(Arrays.asList((end + "+").split("\\+")));
+
+            // add to result mapping
+            Set<String> sIntersection = new HashSet<String>();
+            sIntersection.addAll(queryGenesCovered);
+            sIntersection.retainAll(s);
+
+            Set<String> tIntersection = new HashSet<String>();
+            tIntersection.addAll(targetGenesCovered);
+            tIntersection.retainAll(t);
+
+            if (sIntersection.isEmpty() && tIntersection.isEmpty()) {
+                matchingInTarget = new HashMap<String, Double>();
+                matchingInTarget.put(reconstructWithGeneId(end, newTargetGeneIdToPositionMap), score);
+                currentBestResultMapping.put(reconstructWithGeneId(start, newSourceGeneIdToPositionMap), matchingInTarget);
+                queryGenesCovered.addAll(s);
+                targetGenesCovered.addAll(t);
+                break;
+            }
+        }
+        return currentBestResultMapping;
     }
 
     public void pathwayComparison() {

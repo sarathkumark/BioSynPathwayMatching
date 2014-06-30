@@ -182,7 +182,8 @@ public class SimpleCompare {
                     //target.printPathway();
                     PathwayComparison pComparison = new PathwayComparison(source.convertToPathwayObj(), target.convertToPathwayObj());
                     //PathwayComparison pComparison = new PathwayComparison(target.convertToPathwayObj(), source.convertToPathwayObj());
-                    pComparison.pathwayComparisonGlobalBest();;
+                    //pComparison.pathwayComparisonGlobalBestGreedy();
+                    pComparison.pathwayComparisonGlobalBestCoalesce();
                     //break;
                 }
             }

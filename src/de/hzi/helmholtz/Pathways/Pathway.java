@@ -33,6 +33,13 @@ public class Pathway {
         this.genes = m;
         this.size = m.size();
     }
+    
+     public Pathway(Pathway p) {
+        this.pathwayId = p.pathwayId;
+        this.pathwayName = p.pathwayName;
+        this.genes = p.getGenes();
+        this.size = p.getGenes().size();
+    }
 
     /**
      * @return the modules
@@ -80,11 +87,22 @@ public class Pathway {
         this.pathwayId = pathwayId;
     }
 
+    public boolean removeGene(int geneId){
+        for (int i = 0; i < this.genes.size(); i++) {
+            Gene g = this.genes.get(i);
+            if(g.getGeneId() == geneId){
+                this.genes.remove(g);
+                return true;
+            }
+        }
+        return false;
+    }
+    
     /**
      * @return the size
      */
     public int size() {
-        return size;
+        return this.getGenes().size();
     }
 
     @Override

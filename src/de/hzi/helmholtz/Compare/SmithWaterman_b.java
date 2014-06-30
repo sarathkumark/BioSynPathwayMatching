@@ -1,11 +1,10 @@
 package de.hzi.helmholtz.Compare;
 
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-
-import com.google.common.collect.Lists;
 
 public class SmithWaterman_b {
 	List<String> mSeqA;
