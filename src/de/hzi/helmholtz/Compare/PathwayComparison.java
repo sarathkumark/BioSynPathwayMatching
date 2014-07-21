@@ -16,6 +16,7 @@ import de.hzi.helmholtz.Pathways.Pathway;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -49,7 +50,6 @@ public class PathwayComparison {
     private double statusWeight = 0.5f;
     private double substrateWeight = 0.5f;
     private int GENE_MAX_DISTANCE = 1000;
-
     private Map<String, Map<String, Double>> bestResultMapping;
 
     public PathwayComparison(Pathway source, Pathway target) {
@@ -223,29 +223,56 @@ public class PathwayComparison {
                 } else if (queryGene.size() > targetGene.size()) {
                     // Merge multiple target genes and compare to one source gene
                     // store scores for windows of all sizes upto maxWindowSize
+                    int maxGap = 1;
+
                     for (int currentWindowSize = 0; currentWindowSize < maxWindowSize; currentWindowSize++) {
                         if (currentTargetGene + currentWindowSize <= secondPathway.size()) {
                             // construct list of target genes to compare, list size = currentWindowSize
                             List<Gene> mergedGenes = new ArrayList<Gene>();
                             List<Gene> targetGenesList = secondPathway.getGenes();
-                            for (int i = currentTargetGene - 1; i <= currentWindowSize; i++) {
-                                mergedGenes.add(targetGenesList.get(i));
-                            }
-                            double score = geneSimilarity.levenshteinSimilarity(queryGene, mergedGenes, functionWeight, statusWeight, substrateWeight);
-                            if (score > 0) {
-                                String combinedGenes = "";
-                                for (int i = currentTargetGene; i <= currentTargetGene + currentWindowSize; i++) {
-                                    combinedGenes += i + "+";
+
+                            if (currentWindowSize < 2) {
+                                for (int i = currentTargetGene - 1; i <= currentWindowSize; i++) {
+                                    mergedGenes.add(targetGenesList.get(i));
                                 }
-                                combinedGenes = combinedGenes.substring(0, combinedGenes.length() - 1);
-                                forwardScores.put(Math.abs(score), combinedGenes);
+                                double score = geneSimilarity.levenshteinSimilarity(queryGene, mergedGenes, functionWeight, statusWeight, substrateWeight);
+                                if (score > 0) {
+                                    String combinedGenes = "";
+                                    for (int i = currentTargetGene; i <= currentTargetGene + currentWindowSize; i++) {
+                                        combinedGenes += i + "+";
+                                    }
+                                    combinedGenes = combinedGenes.substring(0, combinedGenes.length() - 1);
+                                    forwardScores.put(Math.abs(score), combinedGenes);
+                                } else {
+                                    String combinedGenes = "";
+                                    for (int i = currentTargetGene + currentWindowSize; i >= currentTargetGene; i--) {
+                                        combinedGenes += i + "+";
+                                    }
+                                    combinedGenes = combinedGenes.substring(0, combinedGenes.length() - 1);
+                                    forwardScores.put(Math.abs(score), combinedGenes);
+                                }
                             } else {
-                                String combinedGenes = "";
-                                for (int i = currentTargetGene + currentWindowSize; i >= currentTargetGene; i--) {
-                                    combinedGenes += i + "+";
+                                // current window size is more than 2, so create gaps
+                                for (int g = 1; g <= maxGap; g++) {
+                                    for (int i = currentTargetGene - 1; mergedGenes.size() <= currentWindowSize && i + g - 1 < secondPathway.size(); i += g + 1) {
+                                        mergedGenes.add(targetGenesList.get(i));
+                                    }
+                                    double score = geneSimilarity.levenshteinSimilarity(queryGene, mergedGenes, functionWeight, statusWeight, substrateWeight);
+                                    List<Integer> combinedGenes = new ArrayList<Integer>();
+                                    for (int i = currentTargetGene; combinedGenes.size() <= currentWindowSize && i + g - 1 <= secondPathway.size(); i += g + 1) {
+                                        combinedGenes.add(i);   // + "+";
+                                    }
+                                    if (score > 0) {
+                                        String cString = combinedGenes.toString().replaceAll(" ", "").replaceAll(",", "+");
+                                        cString = cString.substring(1, cString.length() - 1);
+                                        forwardScores.put(Math.abs(score), cString);
+                                    } else {
+                                        Collections.reverse(combinedGenes);
+                                        String cString = combinedGenes.toString().replaceAll(" ", "").replaceAll(",", "+");
+                                        cString = cString.substring(1, cString.length() - 1);
+                                        forwardScores.put(Math.abs(score), cString);
+                                    }
                                 }
-                                combinedGenes = combinedGenes.substring(0, combinedGenes.length() - 1);
-                                forwardScores.put(Math.abs(score), combinedGenes);
                             }
                         }
                     }
