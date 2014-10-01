@@ -2,9 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package de.hzi.helmholtz.Genes;
+package de.hzi.helmholtz.ModularGenes;
 
-import de.hzi.helmholtz.Domains.Domain;
+import de.hzi.helholtz.Modules.Module;
 import java.util.Iterator;
 import java.util.List;
 
@@ -12,69 +12,69 @@ import java.util.List;
  *
  * @author skondred
  */
-public class Gene {
+public class ModularGene {
 
     /*Id of the gene*/
-    private int geneId;
+    private int modularGeneId;
     /*Name of the gene*/
-    private String geneName;
+    private String modularGeneName;
     /*Ordered list of domains*/
-    private List<Domain> domains;
+    private List<Module> modules;
     /*Number of domains in this gene*/
     private int size;
 
-    public Gene(int id, String name, List<Domain> domains) {
-        this.geneId = id;
-        this.geneName = name;
-        this.domains = domains;
-        this.size = domains.size();
+    public ModularGene(int id, String name, List<Module> modules) {
+        this.modularGeneId = id;
+        this.modularGeneName = name;
+        this.modules = modules;
+        this.size = modules.size();
     }
 
     /**
-     * @param domains the domains to set
+     * @param modules the domains to set
      */
-    public void setDomains(List<Domain> domains) {
-        this.domains = domains;
-        this.size = domains.size();
+    public void setDomains(List<Module> modules) {
+        this.modules = modules;
+        this.size = modules.size();
     }
 
-    public Iterator<Domain> domainIterator() {
-        return this.getDomains().iterator();
+    public Iterator<Module> moduleIterator() {
+        return this.getModules().iterator();
     }
 
     /**
      * @return the domains
      */
-    public List<Domain> getDomains() {
-        return domains;
+    public List<Module> getModules() {
+        return modules;
     }
 
     /**
      * @return the moduleName
      */
-    public String getGeneName() {
-        return geneName;
+    public String getModularGeneName() {
+        return modularGeneName;
     }
 
     /**
-     * @param geneName the moduleName to set
+     * @param modularGeneName the moduleName to set
      */
-    public void setGeneName(String geneName) {
-        this.geneName = geneName;
+    public void setModularGeneName(String modularGeneName) {
+        this.modularGeneName = modularGeneName;
     }
 
     /**
-     * @return the geneId
+     * @return the modularGeneId
      */
-    public int getGeneId() {
-        return geneId;
+    public int getModularGeneId() {
+        return modularGeneId;
     }
 
     /**
-     * @param geneId the geneId to set
+     * @param modularGeneId the modularGeneId to set
      */
-    public void setGeneId(int geneId) {
-        this.geneId = geneId;
+    public void setModularGeneId(int modularGeneId) {
+        this.modularGeneId = modularGeneId;
     }
 
     /**
@@ -88,9 +88,9 @@ public class Gene {
     public String toString() {
         String toReturn = "";
 
-        toReturn += geneId;
+        toReturn += modularGeneId;
         toReturn += ":";
-        toReturn += domains.toString();
+        toReturn += modules.toString();
 
         return toReturn;
     }

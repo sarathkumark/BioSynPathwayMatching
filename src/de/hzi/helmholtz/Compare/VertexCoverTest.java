@@ -419,12 +419,12 @@ class VertexCoverTest {
 
         /*Qmap.clear();
          Tmap.clear();*/
-        xml2text xml2 = new xml2text();
+        XmlToText xml2 = new XmlToText();
 
-        xml2text.main();
+        XmlToText.main();
 
-        /*Qmap = xml2text.Qmap;
-         Tmap = xml2text.Tmap;*/
+        /*Qmap = XmlToText.Qmap;
+         Tmap = XmlToText.Tmap;*/
         Map<Integer, List<String>> Qmap1 = new HashMap<Integer, List<String>>(Qmap);
         Map<Integer, List<String>> Tmap1 = new HashMap<Integer, List<String>>(Tmap);
 

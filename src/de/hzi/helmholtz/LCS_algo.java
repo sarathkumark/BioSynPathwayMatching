@@ -46,8 +46,6 @@ public class LCS_algo {
     }
 
     public static void main(String[] args) {
-
-
         String[] a = {"KS", "AT", "DH", "KR", "ACP"};
         String[] b = {"KS", "AT", "AT", "DH", "KR", "ACP"};
         System.out.println(LCS_algo.LongestCommonSubsequence(a, b));

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import com.ximpleware.*;
 
-public class xml2text {
+public class XmlToText {
 
     static String Qf = "C:\\Users\\srdu001\\Desktop\\Ccc1071_scaf.xml";
     static String Tf = "C:\\Users\\srdu001\\Desktop\\DK1622_Mxa.xml";
