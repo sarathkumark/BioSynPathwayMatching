@@ -17,7 +17,7 @@
  OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  
- @ Introduction
+ @ Description
 
  Comparing gene sequences using sequence based tools is complex and
  the current method of manual comparsion is clearly inefficient. Researchers 
