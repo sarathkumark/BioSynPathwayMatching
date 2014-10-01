@@ -2,14 +2,14 @@ package de.hzi.helmholtz.Compare;
 
 import java.util.*;
 
-class Longestcommonsubseq {
+class LongestCommonSubSequence {
 
     List l1;
     List l2;
     List lcs;
     int length[][];
 
-    public Longestcommonsubseq(List ll1, List ll2) {
+    public LongestCommonSubSequence(List ll1, List ll2) {
         l1 = ll1;
         l2 = ll2;
     }
@@ -253,7 +253,7 @@ class Longestcommonsubseq {
         for (i = 0; i < Qgene5.size(); i++) {
             ll1.add(new String(Qgene5.get(i)));
         }
-        Longestcommonsubseq l = new Longestcommonsubseq(ll2, ll1);
+        LongestCommonSubSequence l = new LongestCommonSubSequence(ll2, ll1);
         l.computeLengthMatrix();
         /*double score = 0.0;
          score = 1-((double)LevenshteinDistance.computeLevenshteinDistance(Qgene4, Qgene5)/(Math.max(Qgene4.size(),Qgene5.size())));

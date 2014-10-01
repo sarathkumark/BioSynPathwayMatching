@@ -22,7 +22,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 
-class VertexCoverTest {
+class VertexCover {
 
     static double finalscore = 0;
     static double s_add = 1.0, s_penality = -1.0;
@@ -527,7 +527,7 @@ class VertexCoverTest {
                         }
 
                     }
-                    SmithWaterman_b sw = new SmithWaterman_b();
+                    SmithWaterman sw = new SmithWaterman();
                     sw.init(qfunction, tfunction);
                     sw.process();
                     sw.backtrack();
@@ -573,7 +573,7 @@ class VertexCoverTest {
                         }
 
                     }
-                    SmithWaterman_b sw = new SmithWaterman_b();
+                    SmithWaterman sw = new SmithWaterman();
                     sw.init(qfunction, tfunction);
                     sw.process();
                     sw.backtrack();
@@ -653,7 +653,7 @@ class VertexCoverTest {
                         qfunction.add(get[0].trim());
 
                     }
-                    SmithWaterman_b sw = new SmithWaterman_b();
+                    SmithWaterman sw = new SmithWaterman();
                     sw.init(qfunction, tfunction);
                     sw.process();
                     sw.backtrack();
@@ -785,7 +785,7 @@ class VertexCoverTest {
 
 
          }
-         SmithWaterman_b sw = new SmithWaterman_b();
+         SmithWaterman sw = new SmithWaterman();
          sw.init(qfunction, tfunction);            
          sw.process();
          sw.backtrack();
@@ -836,7 +836,7 @@ class VertexCoverTest {
          }
 
          }
-         SmithWaterman_b sw = new SmithWaterman_b();
+         SmithWaterman sw = new SmithWaterman();
          sw.init(qfunction, tfunction);            
          sw.process();
          sw.backtrack();
@@ -932,7 +932,7 @@ class VertexCoverTest {
          qfunction.add(get[0].trim());
 
          }
-         SmithWaterman_b sw = new SmithWaterman_b();
+         SmithWaterman sw = new SmithWaterman();
          sw.init(qfunction, tfunction);            
          sw.process();
          sw.backtrack();

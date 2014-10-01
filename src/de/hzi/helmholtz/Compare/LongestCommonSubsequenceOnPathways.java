@@ -16,9 +16,9 @@ import java.util.List;
  *
  * @author skondred
  */
-public class LongestCommonSubsequence {
+public class LongestCommonSubsequenceOnPathways {
     
-    public LongestCommonSubsequence() {
+    public LongestCommonSubsequenceOnPathways() {
     }
     
     public List<Domain> LCS(Pathway p1, Pathway p2) {

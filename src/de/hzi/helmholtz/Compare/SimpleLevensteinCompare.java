@@ -615,7 +615,7 @@ public class SimpleLevensteinCompare {
                         }
                     }
                 }
-                SmithWaterman_b sw = new SmithWaterman_b();
+                SmithWaterman sw = new SmithWaterman();
                 sw.init(qfunction, tfunction);
                 sw.process();
                 sw.backtrack();
@@ -663,7 +663,7 @@ public class SimpleLevensteinCompare {
                     }
 
                 }
-                SmithWaterman_b sw = new SmithWaterman_b();
+                SmithWaterman sw = new SmithWaterman();
                 sw.init(qfunction, tfunction);
                 sw.process();
                 sw.backtrack();
@@ -751,7 +751,7 @@ public class SimpleLevensteinCompare {
                     qfunction.add(get[0].trim());
 
                 }
-                SmithWaterman_b sw = new SmithWaterman_b();
+                SmithWaterman sw = new SmithWaterman();
                 sw.init(qfunction, tfunction);
                 sw.process();
                 sw.backtrack();

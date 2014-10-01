@@ -1,273 +1,224 @@
 package de.hzi.helmholtz.Compare;
 
+import com.google.common.collect.Lists;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Stack;
 
-//Harry Hull
-//Implements the following Smith-Waterman algorithm http://en.wikipedia.org/wiki/Smith_waterman
-//        Affine Gap algorithm taken from:
-//  http://en.wikipedia.org/wiki/Gap_penalty#Affine_gap_penalty
-//        gap = o + (l-1)*e;
-//        o:        gap opening penalty  (o < 0)
-//        l:        size of the gap
-//        e:        gap extension penalty (o < e < 0)
 public class SmithWaterman {
-
-    private List<String> one;
-    private List<String> two;
-    private int matrix[][];
-    private int gap;
-    private int match;
-    private int o;
-    private int l;
-    private int e;
-    long score = 0;
-
-    public SmithWaterman(List<String> one, List<String> two) {
-        this.one = one;
-        this.two = two;
-        this.match = 150;
-
-        // Define affine gap starting values
-        o = -100;
-        l = 0;
-        e = -50;
-
-        // initialize matrix to 0
-        matrix = new int[one.size() + 1][two.size() + 1];
-        for (int i = 0; i < one.size(); i++) {
-            for (int j = 0; j < two.size(); j++) {
-                matrix[i][j] = 0;
-            }
-        }
-
-    }
-
-    // returns the alignment score
-    public int computeSmithWaterman() {
-        for (int i = 0; i < one.size(); i++) {
-            for (int j = 0; j < two.size(); j++) {
-                gap = o + (l - 1) * e;
-                if (i != 0 && j != 0) {
-                    if (one.get(i).equals(two.get(j))) {
-                        // match
-                        // reset l
-                        l = 0;
-                        matrix[i][j] = Math.max(0, Math.max(
-                                matrix[i - 1][j - 1] + match, Math.max(
-                                matrix[i - 1][j] + gap,
-                                matrix[i][j - 1] + gap)));
-                    } else {
-                        // gap
-                        l++;
-                        matrix[i][j] = Math.max(0, Math.max(
-                                matrix[i - 1][j - 1] + gap, Math.max(
-                                matrix[i - 1][j] + gap,
-                                matrix[i][j - 1] + gap)));
-                    }
+	List<String> mSeqA;
+	List<String> mSeqB;
+	int countdash=0,countlet=0;
+        int[][] mD;
+        int mScore;
+        List<String>  mAlignmentSeqA = new ArrayList<String>();
+        List<String>  mAlignmentSeqB = new ArrayList<String>();
+        List<String> reverseViewA= new ArrayList<String>();
+        List<String> reverseViewB= new ArrayList<String>();
+        void init(List seqA, List seqB) {
+                mSeqA = seqA;
+                mSeqB = seqB;
+                mD = new int[mSeqA.size() + 1][mSeqB.size() + 1];
+                for (int i = 0; i <= mSeqA.size(); i++) {
+                        mD[i][0] = 0;                   
                 }
-            }
-        }
-
-        // find the highest value
-        int longest = 0;
-        int iL = 0, jL = 0;
-        for (int i = 0; i < one.size(); i++) {
-            for (int j = 0; j < two.size(); j++) {
-                if (matrix[i][j] > longest) {
-                    longest = matrix[i][j];
-                    iL = i;
-                    jL = j;
+                for (int j = 0; j <= mSeqB.size(); j++) {
+                        mD[0][j] = 0;
                 }
-            }
         }
+        
+        void process() {
+                for (int i = 1; i <= mSeqA.size(); i++) {
+                        for (int j = 1; j <= mSeqB.size(); j++) {
+                                int scoreDiag = mD[i-1][j-1] + weight(i, j);
+                                int scoreLeft = mD[i][j-1] - 1;
+                                int scoreUp = mD[i-1][j] - 1;
+                                mD[i][j] = Math.max(Math.max(Math.max(scoreDiag, scoreLeft), scoreUp), 0);
+                        }
+                }
+        }
+        
+        void backtrack() {
+                int i = 1;
+                int j = 1;
+                int max = mD[i][j];
 
-        // Backtrack to reconstruct the path
-        int i = iL;
-        int j = jL;
-        Stack<String> actions = new Stack<String>();
-        //System.out.println(i + "\n" + j);
-        while (i != 0 || j != 0) {
-            // diag case
-            //	System.out.println(i + "            " + j);
-            if (i > 0 && j > 0) {
-
-                if (Math.max(matrix[i - 1][j - 1],
-                        Math.max(matrix[i - 1][j], matrix[i][j - 1])) == matrix[i - 1][j - 1]) {
-                    actions.push("align");
-                    i = i - 1;
-                    j = j - 1;
-                    // left case
-                } else if (Math.max(matrix[i - 1][j - 1],
-                        Math.max(matrix[i - 1][j], matrix[i][j - 1])) == matrix[i][j - 1]) {
-                    actions.push("insert");
-                    j = j - 1;
-                    // up case
+                for (int k = 1; k <= mSeqA.size(); k++) {
+                        for (int l = 1; l <= mSeqB.size(); l++) {
+                                if (mD[k][l] > max) {
+                                        i = k;
+                                        j = l;
+                                        max = mD[k][l];
+                                }
+                        }
+                }
+                
+                mScore = mD[i][j];
+                
+                int k = mSeqA.size();
+                int l = mSeqB.size();
+                
+                while (k > i) {
+                        mAlignmentSeqB.add( "-");
+                        mAlignmentSeqA .add(mSeqA.get(k - 1));
+                        countdash+=1;
+                        k--;
+                }
+                while (l > j) {
+                        mAlignmentSeqA.add( "-");
+                        mAlignmentSeqB.add( mSeqB.get(l - 1));
+                        countdash+=1;
+                        l--;
+                }
+                
+                while (mD[i][j] != 0) {                 
+                        if (mD[i][j] == mD[i-1][j-1] + weight(i, j)) {                          
+                                mAlignmentSeqA.add( mSeqA.get(i-1));
+                                mAlignmentSeqB.add( mSeqB.get(j-1));
+                                countlet+=1;
+                                i--;
+                                j--;                            
+                                continue;
+                        } else if (mD[i][j] == mD[i][j-1] - 1) {
+                                mAlignmentSeqA.add( "-");
+                                countdash+=1;
+                                mAlignmentSeqB.add( mSeqB.get(j-1));
+                                j--;
+                                continue;
+                        } else {
+                                mAlignmentSeqA.add( mSeqA.get(i-1));
+                                mAlignmentSeqB.add( "-");
+                                countdash+=1;
+                                i--;
+                                continue;
+                        }
+                }
+                
+                while (i > 0) {
+                        mAlignmentSeqB.add( "-");
+                        mAlignmentSeqA.add( mSeqA.get(i - 1));
+                        i--;
+                }
+                while (j > 0) {
+                        mAlignmentSeqA.add( "-");
+                        mAlignmentSeqB.add( mSeqB.get(j - 1));
+                        j--;
+                }
+                
+             /*   mAlignmentSeqA = new StringBuffer(mAlignmentSeqA).reverse().toString();
+                mAlignmentSeqB = new StringBuffer(mAlignmentSeqB).reverse().toString();*/
+                
+               reverseViewA = Lists.reverse(mAlignmentSeqA);
+                reverseViewB = Lists.reverse(mAlignmentSeqB);
+                
+        }
+        
+        private int weight(int i, int j) {
+                if (mSeqA.get(i - 1).equals(mSeqB.get(j - 1))) {
+                        return 2;
                 } else {
-                    actions.push("delete");
-                    i = i - 1;
+                        return -1;
                 }
-            } else {
-                if (i > j) {
-                    actions.push("delete");
-                    i = i - 1;
-                } else {
-                    actions.push("insert");
-                    j = j - 1;
-                }
-            }
         }
-
-        String alignOne = new String();
-        String alignTwo = new String();
-
-        Stack<String> backActions = (Stack<String>) actions.clone();
-        for (int z = 0; z < one.size(); z++) {
-            alignOne = alignOne + one.get(z) + " ";
-            if (!actions.empty()) {
-                String curAction = actions.pop();
-                // System.out.println(curAction);
-                if (curAction.equals("insert")) {
-                    alignOne = alignOne + "-" + " ";
-                    while (actions.peek().equals("insert")) {
-                        alignOne = alignOne + "-" + " ";
-                        actions.pop();
-                    }
+        
+        void printMatrix() {
+                System.out.print("D =       ");
+                for (int i = 0; i < mSeqB.size(); i++) {
+                        System.out.print(String.format("%s ", mSeqB.get(i)));
                 }
-            }
-
-        }
-
-        for (int z = 0; z < two.size(); z++) {
-
-
-            alignTwo = alignTwo + two.get(z) + " ";
-            if (!backActions.empty()) {
-                String curAction = backActions.pop();
-                if (curAction.equals("delete")) {
-                    alignTwo = alignTwo + "-" + " ";
-                    while (backActions.peek().equals("delete")) {
-                        alignTwo = alignTwo + "-" + " ";
-                        backActions.pop();
-                    }
-                }
-            }
-
-        }
-
-        // print alignment
-        //	System.out.println(alignOne + "\n" + alignTwo);
-
-        return longest;
-    }
-
-    public void printMatrix() {
-        for (int i = 0; i < one.size(); i++) {
-            if (i == 0) {
-                for (int z = 0; z < two.size(); z++) {
-                    if (z == 0) {
-                        System.out.print("   ");
-                    }
-                    System.out.print(two.get(z) + "  ");
-
-                    if (z == two.size() - 1) {
+                System.out.println();
+                for (int i = 0; i < mSeqA.size() + 1; i++) {
+                        if (i > 0) {
+                                System.out.print(String.format("%s ", mSeqA.get(i-1)));
+                        } else {
+                                System.out.print("     ");
+                        }
+                        for (int j = 0; j < mSeqB.size() + 1; j++) {
+                                System.out.print(String.format("%4d ", mD[i][j]));
+                        }
                         System.out.println();
-                    }
                 }
-            }
-
-            for (int j = 0; j < two.size(); j++) {
-                if (j == 0) {
-                    System.out.print(one.get(i) + "  ");
-                }
-                System.out.print(matrix[i][j] + "  ");
-            }
-            System.out.println();
+                System.out.println();
         }
-        System.out.println();
-    }
+        public String printScoreAndAlignments1() {
+        	
+        	String k = reverseViewA.toString().replace("[", "").replace("]", "").replace(",", "") + "\n" + reverseViewB.toString().replace("[", "").replace("]", "").replace(",", "");
+        	return reverseViewA.toString().replace("[", "").replace("]", "").replace(",", "");
+        }
+        public String printScoreAndAlignments2() {
+        	
+        	String k = reverseViewA.toString().replace("[", "").replace("]", "").replace(",", "") + "\n" + reverseViewB.toString().replace("[", "").replace("]", "").replace(",", "");
+        	return reverseViewB.toString().replace("[", "").replace("]", "").replace(",", "");
+        }
+        
+ public double scoring() {
+        	
+        	String k = reverseViewA.toString().replace("[", "").replace("]", "").replace(",", "") + "\n" + reverseViewB.toString().replace("[", "").replace("]", "").replace(",", "");
+        	return mScore;
+        }
+        
+        void printScoreAndAlignments() {
+                System.out.println("Score: " + mScore);
+                System.out.println("Sequence A: " + reverseViewA.toString().replace("[", "").replace("]", "").replace(",", ""));
+                System.out.println("Sequence B: " + reverseViewB.toString().replace("[", "").replace("]", "").replace(",", ""));
+                System.out.println();
+                
+        }
+        
+        public static void main(String [] args) {               
+                char[] seqB = { 'A', 'C', 'G', 'A' };
+                char[] seqA = { 'T', 'C', 'C', 'G' };
+               /* List<String> Qg5 = Arrays.asList("KS", "AT", "DH", "KR","ACP","KS", "AT", "DH", "KR","ACP");
+        		List<String> Qg6 = Arrays.asList("DH", "KR","ACP", "AT", "DH", "KR","ACP");
+        		*/
+        	/*	
+                List<String> Qg5 = Arrays.asList("KS",  "KR","ACP","KS", "AT", "DH", "KR","ACP");
+          		List<String> Qg6 = Arrays.asList("KS","AT", "KR","ACP", "AT", "DH", "KR","ACP");*/
 
-    public static void main(String[] args) {
-        // DNA sequence Test:
+                
+                
+                List<String> Qg5 = Arrays.asList("C", "A", "PCP", "Red");
+        		List<String> Qg6 = Arrays.asList("C", "A", "PCP", "?");
+                
+                
+                
+                SmithWaterman sw = new SmithWaterman();
+                sw.init(Qg5, Qg6);            
+                sw.process();
+                sw.backtrack();
+                
+               
+                sw.printScoreAndAlignments();
+               // sw.printMatrix();
+                
+                
+              //  SmithWaterman1 sw1 = new SmithWaterman1(Qg5, Qg6);
+        		System.out.println("\n\n ");
+        		System.out.println("------------------LCS---------------------- ");
+        		LongestCommonSubSequence sw1 = new LongestCommonSubSequence(Qg6,Qg5);  
+        	/*	List<String> Qg5 = Arrays.asList("KS", "AT", "KR","ACP","KS", "AT", "DH", "KR","ACP");
+        		List<String> Qg6 = Arrays.asList("KS","DH", "KR","ACP", "AT", "DH", "KR","ACP");
+        			List<String> Qg5 = Arrays.asList("KS", "AT", "DH", "KR","ACP");
+                		List<String> Qg5 = Arrays.asList("KS", "AT",  "KR","ACP");*/
+        		List ll1 = new LinkedList();
+        		List ll2 = new LinkedList();
+        		//sw1.setStrings(Qg5, Qg6);
+        		for (int i = 0 ; i < Qg5.size() ; i++)
+        			ll1.add(new String(Qg5.get(i)));
+        		for (int i = 0 ; i < Qg6.size() ; i++)
+        			ll2.add(new String(Qg6.get(i)));
+        		System.out.println(Qg5.toString().replace("[", "").replace("]", "").replace(",", ""));
+        		sw1.computeLengthMatrix();
 
-        List<String> Qg5 = Arrays.asList("DH", "ER", "KR", "ACP");
-        List<String> Qg6 = Arrays.asList("KS", "AT", "DH", "ER", "KR", "ACP");
+        		sw1.extractLongestcommonsubseq();
+        		sw1.printLongestcommonsubseq();
+        		System.out.println(sw.countdash+"           "+sw.countlet);
+        		//sw1.fillScoreArray();
+        		//sw.printArray();
+        		//sw.printPath();
 
-
-        /*List<String> Qg5 = Arrays.asList("ACP","KS", "AT","AT", "DH", "KR","ACP");
-         List<String> Qg6 = Arrays.asList("ACP", "AT","AT", "DH", "KR","ACP");
-         */
-        SmithWaterman sw1 = new SmithWaterman(Qg5, Qg6);
-        System.out.println("Alignment Score: " + sw1.computeSmithWaterman());
-
-        SmithWaterman_b sw = new SmithWaterman_b();
-        sw.init(Qg5, Qg6);
-        sw.process();
-        sw.backtrack();
-        sw.printScoreAndAlignments();
-
-
-        //sw.printMatrix();
-
-        /*List<String> Tgene4 = Arrays.asList("KS", "AT", "DH", "KR","ACP","KS", "AT", "DH", "KR","ACP");
-         List<String> Tgene5 = Arrays.asList("DH", "KR","ACP", "AT", "DH", "KR","ACP");
-
-
-
-         List<String> Qgene4 = Arrays.asList("ACP","KS", "AT","AT", "DH", "KR","ACP","KS", "AT", "DH", "KR","ACP","KS", "AT", "DH", "KR","ACP","KS", "AT", "DH", "KR","ACP","KS", "AT", "KR","ACP","KS", "AT", "DH", "KR","ACP","KS", "AT","DH", "ER", "KR", "ACP","C", "A", "PCP", "Red");
-         List<String> Qgene5 = Arrays.asList("ACL","ACP","C","A","PCP","ACP","AT","AT", "DH", "KR","ACP","KS", "AT", "DH", "KR","ACP","KS", "AT", "DH", "KR","ACP","KS", "AT", "DH", "KR","ACP","KS", "AT", "KR","ACP","AT", "DH", "KR","ACP","KS", "AT","DH", "ER", "KR", "ACP","C", "A", "PCP", "?");
-
-
-
-
-         System.out.println("------------------local alignment---------------------- ");
-         SmithWaterman sw = new SmithWaterman(Tgene4, Tgene5);
-         System.out.println("Alignment Score: " + sw.computeSmithWaterman());
-         sw.printMatrix();
-
-
-
-
-
-
-
-
-         System.out.println("\n\n ");
-         System.out.println("------------------LCS---------------------- ");
-         LCS_score sw1 = new LCS_score();  
-         List<String> Qg5 = Arrays.asList("KS", "AT", "DH", "KR","ACP","KS", "AT", "DH", "KR","ACP");
-         List<String> Qg6 = Arrays.asList("DH", "KR","ACP", "AT", "DH", "KR","ACP");
-
-         List<String> Qg5 = Arrays.asList("C", "A", "PCP", "Red");
-         List<String> Qg6 = Arrays.asList("C", "A", "PCP", "?");
-
-
-         List<String> Qg5 = Arrays.asList("KS", "AT", "DH", "KR","ACP");
-         List<String> Qg5 = Arrays.asList("KS", "AT",  "KR","ACP");
-         List ll1 = new LinkedList();
-         List ll2 = new LinkedList();
-         sw1.setStrings(Qg5, Qg6);
-         for (int i = 0 ; i < Qg5.size() ; i++)
-         ll2.add(new String(Qg5.get(i)));
-         for (int i = 0 ; i < Qg6.size() ; i++)
-         ll1.add(new String(Qg6.get(i)));
-         System.out.println(Qg5.toString().replace("[", "").replace("]", "").replace(",", ""));
-         sw1.computeLengthMatrix();
-
-         sw1.extractLongestcommonsubseq();
-         sw1.printLongestcommonsubseq();
-         sw1.fillScoreArray();
-         //sw.printArray();
-         //sw.printPath();
-
-         System.out.println("value of best alignment is "+sw1.bestval);
-
-
-         // sw.printMatrix();
-
-         //  sw = new SmithWaterman("gcgcgtgc", "gcaagtgca");
-         //  System.out.println("Alignment Score: " + sw.computeSmithWaterman());
-         // sw.printMatrix();
-         */    }
+        		//System.out.println("value of best alignment is "+sw.bestval);
+                
+        }
 }
